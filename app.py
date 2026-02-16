@@ -374,6 +374,31 @@ if uploaded_file:
             data = parse_resume_with_ai(raw_text, groq_client)
             
             if data:
+                # =========================================================
+                # 🚀 FORCE LINKS (HARDCODED OVERRIDES)
+                # This block overwrites whatever the AI found with your real links
+                # =========================================================
+                
+                # 1. Force Social Media Links
+                if 'personal_info' not in data: data['personal_info'] = {}
+                data['personal_info']['linkedin'] = "[https://www.linkedin.com/in/yash-shetty-5614b62ab/](https://www.linkedin.com/in/yash-shetty-5614b62ab/)"
+                data['personal_info']['github'] = "[https://github.com/yashshetty-2302](https://github.com/yashshetty-2302)"
+
+                # 2. Force Project Links (Fuzzy Match Logic)
+                if 'projects' in data:
+                    for p in data['projects']:
+                        t_lower = p.get('title', '').lower()
+                        # Match "Report to Plate"
+                        if "plate" in t_lower or "report" in t_lower:
+                            p['link'] = "[https://github.com/yashshetty-2302/Report_Plate_AI](https://github.com/yashshetty-2302/Report_Plate_AI)"
+                        # Match "Heart Disease"
+                        elif "heart" in t_lower or "disease" in t_lower:
+                            p['link'] = "[https://github.com/yashshetty-2302/heartdiseaseclassification](https://github.com/yashshetty-2302/heartdiseaseclassification)"
+
+                # =========================================================
+                # 🎨 RENDER UI
+                # =========================================================
+
                 # --- HERO SECTION ---
                 p_info = data.get('personal_info', {})
                 
@@ -385,10 +410,10 @@ if uploaded_file:
                 links_html = ""
                 if p_info.get('email'):
                     links_html += f'<a href="mailto:{p_info["email"]}" class="social-link">📩 Email</a>'
-                if p_info.get('linkedin'):
-                    links_html += f'<a href="{p_info["linkedin"]}" target="_blank" class="social-link">🔗 LinkedIn</a>'
-                if p_info.get('github'):
-                    links_html += f'<a href="{p_info["github"]}" target="_blank" class="social-link">💻 GitHub</a>'
+                
+                # We use the Hardcoded keys here
+                links_html += f'<a href="{p_info["linkedin"]}" target="_blank" class="social-link">🔗 LinkedIn</a>'
+                links_html += f'<a href="{p_info["github"]}" target="_blank" class="social-link">💻 GitHub</a>'
 
                 st.markdown(f"""
                 <div class="hero-card">
@@ -443,9 +468,29 @@ if uploaded_file:
                         
                         def render_project(proj):
                             bullets = "".join([f"<li>{item}</li>" for item in proj.get('description', [])])
+                            
+                            # Check for the Overridden Link
+                            proj_link = proj.get('link')
                             link_html = ""
-                            if proj.get('link'):
-                                link_html = f'<div style="margin-top:12px;"><a href="{proj.get("link")}" target="_blank" style="font-size: 0.9rem; text-decoration: none; font-weight: 600;">🔗 View Project &rarr;</a></div>'
+                            
+                            if proj_link and proj_link not in ["#", "null", "None"]:
+                                link_html = f"""
+                                <div style="margin-top:15px;">
+                                    <a href="{proj_link}" target="_blank" style="
+                                        display: inline-block;
+                                        background: rgba(96, 165, 250, 0.1);
+                                        color: #60a5fa;
+                                        padding: 8px 16px;
+                                        border-radius: 8px;
+                                        text-decoration: none;
+                                        font-weight: 600;
+                                        border: 1px solid rgba(96, 165, 250, 0.3);
+                                        transition: all 0.2s;
+                                    ">
+                                    🔗 View Project
+                                    </a>
+                                </div>
+                                """
                             
                             return f"""
                             <div class="resume-card" style="height: 100%; display: flex; flex-direction: column;">
@@ -464,7 +509,7 @@ if uploaded_file:
                                 st.markdown(render_project(projects[i+1]), unsafe_allow_html=True)
                         st.markdown("<br>", unsafe_allow_html=True)
 
-                # --- TAB 3: SKILLS (FIXED) ---
+                # --- TAB 3: SKILLS ---
                 with tab3:
                     st.markdown("<br>", unsafe_allow_html=True)
                     skills = data.get('skills', {})
@@ -473,7 +518,6 @@ if uploaded_file:
                         col_a, col_b = st.columns(2)
                         
                         with col_a:
-                            # Header INSIDE the card box
                             st.markdown(f"""
                             <div class="resume-card">
                                 <div class="skill-category">💻 Languages & Core</div>
@@ -491,7 +535,6 @@ if uploaded_file:
                             st.markdown("</div>", unsafe_allow_html=True)
 
                         with col_b:
-                            # Header INSIDE the card box
                             st.markdown(f"""
                             <div class="resume-card">
                                 <div class="skill-category">⚙️ Developer Tools</div>
@@ -505,7 +548,6 @@ if uploaded_file:
                                 <div class="skill-category">🤝 Soft Skills</div>
                             """, unsafe_allow_html=True)
                             for s in skills.get('soft_skills', []) + skills.get('soft', []):
-                                # Use new soft-skill-pill class for green glow
                                 st.markdown(f'<span class="soft-skill-pill">{s}</span>', unsafe_allow_html=True)
                             st.markdown("</div>", unsafe_allow_html=True)
 
